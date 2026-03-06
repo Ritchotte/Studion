@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Studion",
+  "version": "1.0.0",
+  "description": "AI-powered student operating system for assignments and deadlines.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://*.brightspace.com/*",
+    "https://learn.bcit.ca/*",
+    "http://localhost:3000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.brightspace.com/*",
+        "https://learn.bcit.ca/*"
+      ],
+      "js": ["content.js"]
+    }
+  ]
+}
