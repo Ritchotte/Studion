@@ -15,32 +15,36 @@ An AI-powered platform designed to help students manage assignments, deadlines, 
 
 **Studion Chrome Extension in Action**
 
-The extension scans learning platform pages and extracts structured assignment data that can be used for automatic tracking, deadline management, and study planning.
+The extension now auto-detects supported BCIT Learn pages on load, extracts structured page data, and sends that payload to the local Studion backend automatically.
 
 **Example Output:**
 ```json
 {
-  "course": "COMP 2132 - Object-Oriented Programming",
-  "assignment": "Assignment 4: Workflow Engine",
-  "dueDate": "2026-03-20T23:59:00Z",
-  "weight": "15%",
-  "description": "Build a workflow engine using Node.js...",
-  "status": "upcoming"
+  "title": "Lesson 8 - COMP-2501-0 - Programming Fundamentals Part 2 (Java) - 88461",
+  "url": "https://learn.bcit.ca/d2l/le/content/1193211/Home",
+  "scannedAt": "2026-03-10T07:11:08.933Z",
+  "pageType": "content-module",
+  "courseTitle": "COMP-2501-0 - Programming Fundamentals Part 2 (Java) - 88461",
+  "assignmentTitle": "Lesson 8",
+  "dueDate": null,
+  "description": null,
+  "assignmentLinks": [
+    {
+      "title": "2501_Lab08",
+      "url": "https://learn.bcit.ca/d2l/le/content/1193211/viewContent/12408277/View"
+    }
+  ]
 }
 ```
 
 **Backend Response:**
 ```
-Assignment Analysis: COMP 2132 Assignment 4
-Priority: HIGH (15% of final grade)
-Time until due: 14 days
-
-Recommended Schedule:
-Week 1: Research & Setup (5 hours)
-Week 2: Core Development (8 hours)  
-Week 3: Testing & Polish (4 hours)
-
-Notifications scheduled: 7d, 3d, 1d reminders
+{
+  "status": "scan received",
+  "received": {
+    "...": "structured page payload"
+  }
+}
 ```
 
 ---
@@ -65,11 +69,13 @@ Students don't fail because they can't do the work—they fail because managing 
 
 A Chrome extension + AI agent system that:
 
-1. **Automatically extracts** assignments from your university portal (D2L Brightspace)
-2. **Intelligently analyzes** workload, priority, and complexity
-3. **Generates actionable** study plans with realistic time estimates
-4. **Keeps you ahead** with smart reminders and deadline tracking
-5. **Creates structure** with auto-generated project hubs for major assignments
+1. **Automatically detects** supported LMS pages as they load
+2. **Extracts structured course content** from your university portal (currently BCIT Learn / D2L Brightspace)
+3. **Sends scan payloads** to a local backend for ingestion
+4. **Intelligently analyzes** workload, priority, and complexity
+5. **Generates actionable** study plans with realistic time estimates
+6. **Keeps you ahead** with smart reminders and deadline tracking
+7. **Creates structure** with auto-generated project hubs for major assignments
 
 ### Why a Chrome Extension?
 
@@ -103,18 +109,22 @@ Studion is intended to evolve into a complete academic operating system—an int
 ### ✅ Backend Infrastructure
 - Express.js API server with TypeScript
 - Health monitoring endpoint
+- Scan ingestion endpoint at `POST /scan`
+- Local CORS handling for extension-to-backend communication
 - Hot-reload development environment
 - Clean project architecture ready for scaling
 
-### ✅ Repository Foundation
-- Professional Git workflow established
-- Proper `.gitignore` hygiene (no bloat)
-- Modular codebase structure (backend/extension separation)
+### ✅ Chrome Extension
+- Manifest V3 extension targeting `https://learn.bcit.ca/*`
+- Auto-scan on supported page load
+- Background service worker for backend requests
+- Popup fallback for manual scans
+- Heuristic extraction of course title, assignment title, due date, description, and relevant links
 
 ### 🚧 Currently Building
-- Chrome extension skeleton
-- D2L Brightspace content scraping
-- Assignment data extraction pipeline
+- More reliable Brightspace-specific selectors
+- Better assignment/detail page classification
+- Storage and analysis layers beyond simple scan logging
 
 ---
 
@@ -130,15 +140,17 @@ Studion is intended to evolve into a complete academic operating system—an int
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              Chrome Extension (Data Layer)                  │
-│  • Content scripts extract assignment metadata              │
+│  • Content script detects supported pages on load           │
 │  • Structured JSON payload generation                       │
-│  • Popup UI for quick assignment overview                   │
+│  • Background worker posts scans to backend                 │
+│  • Popup UI remains available as a manual fallback          │
 └────────────────────────┬────────────────────────────────────┘
                          │
-                         │ POST /api/assignments
+                         │ POST /scan
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            Backend API (Node.js + Express)                  │
+│  • Scan ingestion and logging                               │
 │  • Assignment ingestion & storage                           │
 │  • AI agent orchestration                                   │
 │  • Priority scoring algorithms                              │
@@ -157,36 +169,37 @@ Studion is intended to evolve into a complete academic operating system—an int
 
 ### Example Data Flow
 
-**1. Student visits Brightspace assignment page**
+**1. Student opens a BCIT Learn page**
 ```javascript
-// Extension content script extracts:
+// Content script extracts:
 {
-  "course": "COMP 2132 - Object-Oriented Programming",
-  "assignment": "Assignment 4: Workflow Engine",
-  "dueDate": "2026-03-20T23:59:00Z",
-  "weight": "15%",
-  "description": "Build a workflow engine using Node.js..."
+  "courseTitle": "COMP-2501-0 - Programming Fundamentals Part 2 (Java) - 88461",
+  "assignmentTitle": "Lesson 8",
+  "pageType": "content-module",
+  "assignmentLinks": [
+    {
+      "title": "2501_Lab08",
+      "url": "https://learn.bcit.ca/d2l/le/content/1193211/viewContent/12408277/View"
+    }
+  ]
 }
 ```
 
-**2. Backend agent analyzes and responds**
+**2. Background worker sends the payload to the backend**
 ```
-Assignment: COMP 2132 Final Project (30% of grade)
-Due: March 20 (12 days away)
+POST http://localhost:3000/scan
+```
 
-Recommended Schedule:
-Week 1 (Mar 8-14):
-  ✓ Research workflow architecture patterns (3 hrs)
-  ✓ Set up Node.js project structure (2 hrs)
-  ✓ Design database schema (2 hrs)
-
-Week 2 (Mar 15-20):
-  ✓ Build core engine (8 hrs)
-  ✓ Testing & debugging (4 hrs)
-  ✓ Documentation (2 hrs)
-
-Total: 21 hours across 6 sessions
-Notification schedule set: 7d, 3d, 1d reminders
+**3. Backend receives and logs the scan**
+```
+Studion received page scan:
+{
+  title: "Lesson 8 - COMP-2501-0 - Programming Fundamentals Part 2 (Java) - 88461",
+  url: "https://learn.bcit.ca/d2l/le/content/1193211/Home",
+  pageType: "content-module",
+  courseTitle: "COMP-2501-0 - Programming Fundamentals Part 2 (Java) - 88461",
+  assignmentTitle: "Lesson 8"
+}
 ```
 
 ---
@@ -195,7 +208,7 @@ Notification schedule set: 7d, 3d, 1d reminders
 
 | Layer | Technology | Why |
 |-------|-----------|-----|
-| **Extension** | TypeScript, Chrome Extension Manifest V3 | Type safety, modern extension APIs |
+| **Extension** | JavaScript, Chrome Extension Manifest V3 | Fast iteration, modern extension APIs |
 | **Backend** | Node.js, Express, Prisma | Fast prototyping, strong ecosystem |
 | **Database** | PostgreSQL | Relational data, robust querying |
 | **AI/Agents** | Claude API (Anthropic) | Best-in-class reasoning for complex task planning |
@@ -209,10 +222,11 @@ Notification schedule set: 7d, 3d, 1d reminders
 ### Phase 1: MVP (Current)
 - [x] Backend server infrastructure
 - [x] Git repository & workflow
-- [ ] Chrome extension skeleton
-- [ ] D2L Brightspace DOM parsing
-- [ ] Assignment extraction pipeline
-- [ ] Basic API endpoint (`POST /api/assignments`)
+- [x] Chrome extension skeleton
+- [x] BCIT Learn auto-scan on page load
+- [x] Basic DOM extraction pipeline
+- [x] Basic API endpoint (`POST /scan`)
+- [ ] Brightspace-specific field extraction hardening
 
 ### Phase 2: Intelligence
 - [ ] Claude AI integration
