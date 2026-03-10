@@ -136,6 +136,8 @@ function extractDescription() {
 }
 
 function extractAssignmentLinks() {
+  const seenUrls = new Set();
+
   return Array.from(document.querySelectorAll("a[href]"))
     .map((link) => ({
       title: normalizeText(link.textContent || ""),
@@ -150,7 +152,16 @@ function extractAssignmentLinks() {
         return false;
       }
 
-      return /(assignment|quiz|project|lab|discussion|exam|due|lesson|module)/i.test(link.title);
+      if (link.url === window.location.href || seenUrls.has(link.url)) {
+        return false;
+      }
+
+      if (!/(assignment|quiz|project|lab|discussion|exam|due|lesson|module)/i.test(link.title)) {
+        return false;
+      }
+
+      seenUrls.add(link.url);
+      return true;
     })
     .slice(0, 10);
 }
