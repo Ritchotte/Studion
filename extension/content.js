@@ -1,14 +1,32 @@
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+
   if (message.type === "SCAN_PAGE") {
-    const pageTitle = document.title;
 
-    // placeholder scan for now
-    const data = {
-      title: pageTitle,
-      url: window.location.href,
-      message: "Studion scanned this page successfully."
-    };
+    const assignments = [];
 
-    sendResponse(data);
+    // Example selectors commonly used in Brightspace
+    const links = document.querySelectorAll("a");
+
+    links.forEach(link => {
+
+      const text = link.textContent?.toLowerCase() || "";
+
+      if (text.includes("assignment") || text.includes("quiz") || text.includes("project")) {
+
+        assignments.push({
+          title: link.textContent.trim(),
+          url: link.href
+        });
+
+      }
+
+    });
+
+    sendResponse({
+      page: document.title,
+      assignments: assignments
+    });
+
   }
+
 });
